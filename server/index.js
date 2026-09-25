@@ -1,12 +1,9 @@
-import 'dotenv/config';
-import express from 'express';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import crypto from 'node:crypto';
-import { initDatabase, requireDatabase } from './db.js';
+require('dotenv').config();
+const express = require('express');
+const path = require('node:path');
+const crypto = require('node:crypto');
+const { initDatabase, requireDatabase } = require('./db');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -324,8 +321,13 @@ app.get(/.*/, (req, res) => {
   return res.sendFile(path.join(distPath, 'index.html'));
 });
 
-await initDatabase();
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Cee Jay Solutions server listening on port ${PORT}`);
-});
+initDatabase()
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Cee Jay Solutions server listening on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  });
