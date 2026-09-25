@@ -10,6 +10,63 @@ const PORT = Number(process.env.PORT) || 4000;
 app.disable('x-powered-by');
 app.use(express.json({ limit: '1mb' }));
 
+
+const ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60;
+
+function getAdminPassword() {
+  return process.env.ADMIN_PASSWORD || '';
+}
+
+function signAdminSession(expiresAt) {
+  return crypto
+    .createHmac('sha256', getAdminPassword())
+    .update(String(expiresAt))
+    .digest('hex');
+}
+
+function createAdminSession() {
+  const expiresAt = Math.floor(Date.now() / 1000) + ADMIN_SESSION_TTL_SECONDS;
+  return `${expiresAt}.${signAdminSession(expiresAt)}`;
+}
+
+function getCookie(req, name) {
+  const header = req.headers.cookie || '';
+  const cookies = header.split(';').map((part) => part.trim());
+  const match = cookies.find((part) => part.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : null;
+}
+
+function isAdminAuthenticated(req) {
+  const token = getCookie(req, 'admin_session');
+  if (!token || !getAdminPassword()) return false;
+
+  const [expiresAt, signature] = token.split('.');
+  const expires = Number(expiresAt);
+  if (!expires || !signature || expires < Math.floor(Date.now() / 1000)) {
+    return false;
+  }
+
+  const expected = signAdminSession(expires);
+  const actualBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expected);
+
+  return (
+    actualBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(actualBuffer, expectedBuffer)
+  );
+}
+
+function requireAdmin(req, res, next) {
+  if (!isAdminAuthenticated(req)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required.',
+    });
+  }
+
+  next();
+}
+
 const ALLOWED_STATUSES = new Set([
   'new',
   'contacted',
@@ -221,7 +278,59 @@ app.post('/api/consultation', async (req, res) => {
   }
 });
 
-app.get('/api/consultations', async (_req, res) => {
+
+app.post('/api/admin/login', (req, res) => {
+  const adminPassword = getAdminPassword();
+
+  if (!adminPassword) {
+    return res.status(503).json({
+      success: false,
+      error: 'Admin access is not configured on the server.',
+    });
+  }
+
+  const suppliedPassword = String(req.body?.password ?? '');
+  const supplied = Buffer.from(suppliedPassword);
+  const expected = Buffer.from(adminPassword);
+
+  if (
+    supplied.length !== expected.length ||
+    !crypto.timingSafeEqual(supplied, expected)
+  ) {
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid admin password.',
+    });
+  }
+
+  const session = createAdminSession();
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+
+  res.setHeader(
+    'Set-Cookie',
+    `admin_session=${encodeURIComponent(session)}; Max-Age=${ADMIN_SESSION_TTL_SECONDS}; Path=/; HttpOnly; SameSite=Lax${secure}`
+  );
+
+  return res.json({ success: true });
+});
+
+app.get('/api/admin/session', (req, res) => {
+  res.json({
+    success: true,
+    authenticated: isAdminAuthenticated(req),
+  });
+});
+
+app.post('/api/admin/logout', (_req, res) => {
+  res.setHeader(
+    'Set-Cookie',
+    'admin_session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax'
+  );
+
+  return res.json({ success: true });
+});
+
+app.get('/api/consultations', requireAdmin, async (_req, res) => {
   try {
     const db = requireDatabase();
     const result = await db.query('SELECT * FROM consultations ORDER BY submitted_at DESC');
@@ -239,7 +348,7 @@ app.get('/api/consultations', async (_req, res) => {
   }
 });
 
-app.put('/api/consultations/:id/status', async (req, res) => {
+app.put('/api/consultations/:id/status', requireAdmin, async (req, res) => {
   try {
     const consultationId = req.params.id;
     const status = String(req.body?.status ?? '');
@@ -282,7 +391,7 @@ app.put('/api/consultations/:id/status', async (req, res) => {
   }
 });
 
-app.delete('/api/consultations/:id', async (req, res) => {
+app.delete('/api/consultations/:id', requireAdmin, async (req, res) => {
   try {
     const db = requireDatabase();
     const result = await db.query(
