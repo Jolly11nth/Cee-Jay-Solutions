@@ -1,10 +1,8 @@
-import pg from 'pg';
-
-const { Pool } = pg;
+const { Pool } = require('pg');
 
 const databaseUrl = process.env.DATABASE_URL;
 
-export const pool = databaseUrl
+const pool = databaseUrl
   ? new Pool({
       connectionString: databaseUrl,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
@@ -12,7 +10,7 @@ export const pool = databaseUrl
     })
   : null;
 
-export async function initDatabase() {
+async function initDatabase() {
   if (!pool) {
     console.warn('DATABASE_URL is not set. Database features are disabled.');
     return;
@@ -49,7 +47,7 @@ export async function initDatabase() {
   `);
 }
 
-export function requireDatabase() {
+function requireDatabase() {
   if (!pool) {
     const error = new Error('Database is not configured.');
     error.statusCode = 503;
@@ -58,3 +56,5 @@ export function requireDatabase() {
 
   return pool;
 }
+
+module.exports = { pool, initDatabase, requireDatabase };
