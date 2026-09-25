@@ -23,7 +23,7 @@ export function Portfolio({ onNavigate }: PortfolioProps) {
   const projects = [
     {
       id: 1,
-      title: 'P2P Marketplace - Multi-Vendor Platform',
+      title: 'P2P Marketplace - Multi-Vendor Platform (Bi-quicker)',
       category: 'Mobile App Design',
       description: 'A comprehensive peer-to-peer marketplace app connecting customers with stores and riders. Features store discovery, rider dashboard, active delivery tracking, and real-time order management for seamless operations.',
       images: [foodDeliveryImage1, foodDeliveryImage2, foodDeliveryImage3, foodDeliveryImage4],
