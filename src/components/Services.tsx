@@ -8,6 +8,7 @@ import {
   Shield, 
   Zap, 
   Users,
+  BrainCircuit,
   ArrowRight,
   Check
 } from 'lucide-react';
@@ -63,6 +64,11 @@ export function Services({ onNavigate }: ServicesProps) {
   ];
 
   const additionalServices = [
+    {
+      icon: <BrainCircuit className="w-8 h-8 text-emerald-600" />,
+      title: "AI Modeling and Simulation",
+      description: "Develop intelligent models and simulations to analyze complex systems, test scenarios, and support data-driven decisions."
+    },
     {
       icon: <Smartphone className="w-8 h-8 text-emerald-600" />,
       title: "Mobile App Development",
