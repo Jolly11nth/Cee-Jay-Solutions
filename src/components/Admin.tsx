@@ -1,13 +1,13 @@
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
-import { Mail, Phone, User, Building, Globe, MessageSquare, Calendar, Clock, CheckCircle, Eye, ExternalLink, Trash2, AlertTriangle } from 'lucide-react';
+import { Mail, Phone, User, Building, Globe, MessageSquare, Calendar, Clock, CheckCircle, Eye, ExternalLink, Trash2, AlertTriangle, Lock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface ConsultationData {
   id: string;
@@ -37,20 +37,89 @@ export function Admin({ onNavigate }: AdminProps) {
   const [selectedConsultation, setSelectedConsultation] = useState<ConsultationData | null>(null);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
 
   useEffect(() => {
-    fetchConsultations();
+    checkSession();
   }, []);
 
-  const fetchConsultations = async () => {
+  const checkSession = async () => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultations`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+      const response = await fetch('/api/admin/session', {
+        credentials: 'include',
+      });
+      const result = await response.json();
+
+      if (response.ok && result.authenticated) {
+        setAuthenticated(true);
+        await fetchConsultations();
+      } else {
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error checking admin session:', error);
+      setLoading(false);
+    }
+  };
+
+  const login = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ password }),
       });
 
       const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setLoginError(result.error || 'Unable to sign in.');
+        return;
+      }
+
+      setPassword('');
+      setAuthenticated(true);
+      await fetchConsultations();
+    } catch (error) {
+      console.error('Error logging in:', error);
+      setLoginError('Network error occurred. Please try again.');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } finally {
+      setAuthenticated(false);
+      setConsultations([]);
+      setSelectedConsultation(null);
+    }
+  };
+
+  const fetchConsultations = async () => {
+    try {
+      const response = await fetch('/api/consultations', {
+      });
+
+      const result = await response.json();
+
+      if (response.status === 401) {
+        setAuthenticated(false);
+        return;
+      }
 
       if (!response.ok || !result.success) {
         setError('Failed to load consultations');
@@ -68,11 +137,11 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const updateStatus = async (consultationId: string, newStatus: string) => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultations/${consultationId}/status`, {
+      const response = await fetch(`/api/consultations/${consultationId}/status`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -96,11 +165,9 @@ export function Admin({ onNavigate }: AdminProps) {
   const deleteConsultation = async (consultationId: string) => {
     setDeleting(consultationId);
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultations/${consultationId}`, {
+      const response = await fetch(`/api/consultations/${consultationId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+        credentials: 'include',
       });
 
       const result = await response.json();
@@ -183,6 +250,57 @@ Cee Jay IT Solutions`;
     );
   }
 
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen pt-20 bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+                <Lock className="w-7 h-7 text-emerald-600" />
+              </div>
+              <CardTitle className="text-2xl">Admin Access</CardTitle>
+              <CardDescription>
+                Enter the admin password to manage consultation requests.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={login} className="space-y-4">
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Admin password"
+                  autoComplete="current-password"
+                  required
+                />
+                {loginError && (
+                  <p className="text-sm text-red-600">{loginError}</p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  disabled={loggingIn}
+                >
+                  {loggingIn ? 'Signing in...' : 'Sign In'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => onNavigate('home')}
+                >
+                  Back to Website
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen pt-20">
       {/* Header */}
@@ -200,6 +318,9 @@ Cee Jay IT Solutions`;
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Manage and track all consultation requests from potential clients.
             </p>
+            <div className="mt-4">
+              <Button variant="outline" onClick={logout}>Sign Out</Button>
+            </div>
           </motion.div>
         </div>
       </section>

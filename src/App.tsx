@@ -7,7 +7,6 @@ import { Consultation } from './components/Consultation';
 import { Admin } from './components/Admin';
 import { Navigation } from './components/Navigation';
 import { WhatsAppSupport } from './components/WhatsAppSupport';
-import { generateSitemapXML, generateRobotsTxt } from './utils/sitemap';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<string>('home');
