@@ -1,7 +1,6 @@
 import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { Mail, Phone, User, Building, Globe, MessageSquare, Send, CheckCircle, AlertCircle, Percent } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -171,11 +170,10 @@ export function Consultation({ onNavigate }: ConsultationProps) {
     setSubmitError('');
     
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultation`, {
+      const response = await fetch('/api/consultation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({
           ...formData,
