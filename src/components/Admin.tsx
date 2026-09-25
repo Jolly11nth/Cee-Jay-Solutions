@@ -7,7 +7,6 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface ConsultationData {
   id: string;
@@ -44,10 +43,7 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const fetchConsultations = async () => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultations`, {
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
+      const response = await fetch('/api/consultations', {
       });
 
       const result = await response.json();
@@ -68,11 +64,10 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const updateStatus = async (consultationId: string, newStatus: string) => {
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultations/${consultationId}/status`, {
+      const response = await fetch(`/api/consultations/${consultationId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -96,11 +91,8 @@ export function Admin({ onNavigate }: AdminProps) {
   const deleteConsultation = async (consultationId: string) => {
     setDeleting(consultationId);
     try {
-      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-e5b6f216/consultations/${consultationId}`, {
+      const response = await fetch(`/api/consultations/${consultationId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
-        },
       });
 
       const result = await response.json();
