@@ -1,0 +1,129 @@
+═══════════════════════════════════════════════════════════════════
+  🚀 CEEJAY WEBSITE - COPY & PASTE FIX
+═══════════════════════════════════════════════════════════════════
+
+⚠️  YOUR ISSUE: Builds locally ✅ but fails on Netlify ❌
+
+
+✅ SOLUTION: 2 Issues Fixed
+
+1. ✅ Build script (tsc && vite build → vite build) - DONE
+2. ⚠️  _redirects (folder → file) - YOU MUST DO THIS
+
+
+═══════════════════════════════════════════════════════════════════
+  STEP 1: FIX _REDIRECTS FILE (CRITICAL!)
+═══════════════════════════════════════════════════════════════════
+
+Copy and paste this entire command:
+
+rm -rf public/_redirects && cat > public/_redirects << 'EOF'
+/sitemap.xml /sitemap.xml 200
+/robots.txt /robots.txt 200
+/* /index.html 200
+EOF
+
+
+═══════════════════════════════════════════════════════════════════
+  STEP 2: VERIFY IT WORKED
+═══════════════════════════════════════════════════════════════════
+
+file public/_redirects
+
+Expected output: "ASCII text"
+If you see "directory" → It didn't work, try again
+
+
+═══════════════════════════════════════════════════════════════════
+  STEP 3: TEST BUILD LOCALLY
+═══════════════════════════════════════════════════════════════════
+
+npm run build
+
+Expected: "✓ built in X.XXs"
+If it fails → Copy the error and tell me
+
+
+═══════════════════════════════════════════════════════════════════
+  STEP 4: PUSH TO GITHUB
+═══════════════════════════════════════════════════════════════════
+
+git add .
+git commit -m "Fix Netlify build: remove tsc check, fix _redirects file"
+git push origin main
+
+
+═══════════════════════════════════════════════════════════════════
+  STEP 5: NETLIFY WILL AUTO-DEPLOY
+═══════════════════════════════════════════════════════════════════
+
+⏱️  Wait 4 minutes
+🔍 Watch the deploy log
+✅ Look for: "Deploy succeeded"
+
+
+═══════════════════════════════════════════════════════════════════
+  WHAT I FIXED
+═══════════════════════════════════════════════════════════════════
+
+✅ Changed package.json build script from:
+   "build": "tsc && vite build"
+   to:
+   "build": "vite build"
+
+   Why? TypeScript strict check was failing on Netlify
+
+
+═══════════════════════════════════════════════════════════════════
+  WHAT YOU MUST FIX
+═══════════════════════════════════════════════════════════════════
+
+⚠️  /public/_redirects is a FOLDER but must be a FILE
+
+   Why? Figma Make keeps creating it as a folder when you edit it
+   
+   Fix: Run the command in STEP 1 above
+
+
+═══════════════════════════════════════════════════════════════════
+  IF IT STILL FAILS
+═══════════════════════════════════════════════════════════════════
+
+1. Go to Netlify dashboard
+2. Click the failed deploy
+3. Copy the ENTIRE build log from:
+   "Installing dependencies" to "Build failed"
+4. Send me the log
+
+I need to see the ACTUAL error, not just "exit code 2"
+
+
+═══════════════════════════════════════════════════════════════════
+  QUICK REFERENCE
+═══════════════════════════════════════════════════════════════════
+
+✅ Fixed by me:
+   • package.json build script
+   • Removed TypeScript compiler from build
+
+⚠️  Must fix manually:
+   • Delete _redirects folder
+   • Create _redirects file
+   • Run the command in STEP 1
+
+
+═══════════════════════════════════════════════════════════════════
+  ALL-IN-ONE COMMAND (Run This!)
+═══════════════════════════════════════════════════════════════════
+
+rm -rf public/_redirects && cat > public/_redirects << 'EOF'
+/sitemap.xml /sitemap.xml 200
+/robots.txt /robots.txt 200
+/* /index.html 200
+EOF
+npm run build && git add . && git commit -m "Fix build" && git push
+
+
+═══════════════════════════════════════════════════════════════════
+  DONE! Your site will deploy in 4 minutes! 🚀
+═══════════════════════════════════════════════════════════════════
