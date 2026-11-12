@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig({
+  // Serve generated assets from the repository's GitHub Pages project path.
+  base: '/Cee-Jay-Solutions/',
   plugins: [tailwindcss(), react()],
   resolve: {
     extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
